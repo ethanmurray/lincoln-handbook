@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { answerWithRag } from "@/lib/rag";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,30 +20,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful assistant answering user questions.",
-        },
-        {
-          role: "user",
-          content: trimmedQuestion,
-        },
-      ],
-    });
-
-    const answer = completion.choices[0]?.message?.content || "No response from model.";
+    const result = await answerWithRag(trimmedQuestion);
 
     return NextResponse.json({
-      answer,
-      sources: [],
+      answer: result.answer,
+      sources: result.sources,
     });
   } catch (error) {
-    console.error("OpenAI request failed:", error);
+    console.error("RAG processing failed:", error);
     return NextResponse.json(
-      { error: "OpenAI request failed" },
+      { error: "RAG processing failed" },
       { status: 500 }
     );
   }
