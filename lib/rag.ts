@@ -1,9 +1,17 @@
 import OpenAI from "openai";
 import { createServerClient } from "./supabaseClient";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 export interface ChunkResult {
   doc_name: string;
@@ -26,7 +34,7 @@ export interface RagResponse {
  * Create an embedding for the given text using OpenAI.
  */
 export async function embedText(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
+  const response = await getOpenAI().embeddings.create({
     model: "text-embedding-3-small",
     input: text,
   });
@@ -117,7 +125,7 @@ export async function answerWithRag(question: string): Promise<RagResponse> {
   const prompt = buildPrompt(chunks, question);
 
   // Call OpenAI with the RAG prompt
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
