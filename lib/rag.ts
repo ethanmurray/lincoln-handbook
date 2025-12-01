@@ -1,14 +1,29 @@
-import OpenAI from "openai";
 import { createServerClient } from "./supabaseClient";
 
-// Create fresh client each request to avoid stale connections
-// Explicit timeout and retries for Vercel serverless environment
-function getOpenAI(): OpenAI {
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    timeout: 60000, // 60 seconds
-    maxRetries: 3,
+// Use direct fetch for OpenAI API calls (SDK has issues on Vercel serverless)
+async function openaiRequest(endpoint: string, body: object): Promise<any> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
+
+  const response = await fetch(`https://api.openai.com/v1${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenAI API error (${response.status}): ${errorData?.error?.message || response.statusText}`
+    );
+  }
+
+  return response.json();
 }
 
 export interface ChunkResult {
@@ -32,27 +47,11 @@ export interface RagResponse {
  * Create an embedding for the given text using OpenAI.
  */
 export async function embedText(text: string): Promise<number[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY environment variable is not set");
-  }
-  if (!apiKey.startsWith("sk-")) {
-    throw new Error(`OPENAI_API_KEY appears invalid (starts with: ${apiKey.substring(0, 10)}...)`);
-  }
-
-  try {
-    const response = await getOpenAI().embeddings.create({
-      model: "text-embedding-3-small",
-      input: text,
-    });
-    return response.data[0].embedding;
-  } catch (error: any) {
-    // Get as much error detail as possible
-    const status = error?.status || error?.response?.status || "unknown";
-    const code = error?.code || error?.error?.code || "unknown";
-    const msg = error?.message || String(error);
-    throw new Error(`OpenAI embedding failed (status=${status}, code=${code}): ${msg}`);
-  }
+  const response = await openaiRequest("/embeddings", {
+    model: "text-embedding-3-small",
+    input: text,
+  });
+  return response.data[0].embedding;
 }
 
 /**
@@ -138,7 +137,7 @@ export async function answerWithRag(question: string): Promise<RagResponse> {
   const prompt = buildPrompt(chunks, question);
 
   // Call OpenAI with the RAG prompt
-  const completion = await getOpenAI().chat.completions.create({
+  const completion = await openaiRequest("/chat/completions", {
     model: "gpt-4o-mini",
     messages: [
       {
