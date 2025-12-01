@@ -34,11 +34,16 @@ export interface RagResponse {
  * Create an embedding for the given text using OpenAI.
  */
 export async function embedText(text: string): Promise<number[]> {
-  const response = await getOpenAI().embeddings.create({
-    model: "text-embedding-3-small",
-    input: text,
-  });
-  return response.data[0].embedding;
+  try {
+    const response = await getOpenAI().embeddings.create({
+      model: "text-embedding-3-small",
+      input: text,
+    });
+    return response.data[0].embedding;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`OpenAI embedding failed: ${msg}`);
+  }
 }
 
 /**
@@ -61,8 +66,7 @@ export async function getRelevantChunks(
   });
 
   if (error) {
-    console.error("RPC error:", error.message);
-    throw new Error(`Vector search failed: ${error.message}`);
+    throw new Error(`Supabase vector search failed: ${error.message}`);
   }
 
   console.log(`Found ${data?.length || 0} relevant chunks`);
