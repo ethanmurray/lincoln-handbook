@@ -48,9 +48,12 @@ export async function embedText(text: string): Promise<number[]> {
       input: text,
     });
     return response.data[0].embedding;
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    throw new Error(`OpenAI embedding failed: ${msg}`);
+  } catch (error: any) {
+    // Get as much error detail as possible
+    const status = error?.status || error?.response?.status || "unknown";
+    const code = error?.code || error?.error?.code || "unknown";
+    const msg = error?.message || String(error);
+    throw new Error(`OpenAI embedding failed (status=${status}, code=${code}): ${msg}`);
   }
 }
 
