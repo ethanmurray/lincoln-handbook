@@ -34,6 +34,14 @@ export interface RagResponse {
  * Create an embedding for the given text using OpenAI.
  */
 export async function embedText(text: string): Promise<number[]> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
+  if (!apiKey.startsWith("sk-")) {
+    throw new Error(`OPENAI_API_KEY appears invalid (starts with: ${apiKey.substring(0, 10)}...)`);
+  }
+
   try {
     const response = await getOpenAI().embeddings.create({
       model: "text-embedding-3-small",
