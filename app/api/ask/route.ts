@@ -27,9 +27,10 @@ export async function POST(request: NextRequest) {
       sources: result.sources,
     });
   } catch (error) {
-    console.error("RAG processing failed:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("RAG processing failed:", errorMessage);
     return NextResponse.json(
-      { error: "RAG processing failed" },
+      { error: "RAG processing failed", details: errorMessage },
       { status: 500 }
     );
   }
