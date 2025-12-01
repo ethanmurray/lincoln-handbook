@@ -49,3 +49,36 @@ begin
   limit match_count;
 end;
 $$;
+
+-- Query logs table for tracking user queries
+create table if not exists query_logs (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+
+  -- Query details
+  question text not null,
+  answer text,
+  sources_count int,
+
+  -- User identification
+  ip_address text,
+  user_agent text,
+  referer text,
+
+  -- Request metadata
+  country text,
+  city text,
+  region text,
+  latitude float,
+  longitude float,
+
+  -- Performance
+  latency_ms int,
+
+  -- Error tracking
+  error text,
+  success boolean default true
+);
+
+-- Index for querying by time
+create index if not exists query_logs_created_at_idx on query_logs(created_at desc);

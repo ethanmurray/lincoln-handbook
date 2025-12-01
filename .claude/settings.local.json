@@ -6,7 +6,8 @@
       "Bash(npx tsx:*)",
       "Bash(curl:*)",
       "Bash(git push:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
