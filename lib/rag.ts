@@ -1,16 +1,11 @@
 import OpenAI from "openai";
 import { createServerClient } from "./supabaseClient";
 
-// Lazy initialization to avoid build-time errors
-let openaiClient: OpenAI | null = null;
-
+// Create fresh client each request to avoid stale connections
 function getOpenAI(): OpenAI {
-  if (!openaiClient) {
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return openaiClient;
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 }
 
 export interface ChunkResult {
