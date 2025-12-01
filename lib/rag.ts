@@ -2,9 +2,12 @@ import OpenAI from "openai";
 import { createServerClient } from "./supabaseClient";
 
 // Create fresh client each request to avoid stale connections
+// Explicit timeout and retries for Vercel serverless environment
 function getOpenAI(): OpenAI {
   return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    timeout: 60000, // 60 seconds
+    maxRetries: 3,
   });
 }
 

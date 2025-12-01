@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { answerWithRag } from "@/lib/rag";
 
+// Ensure Node.js runtime for OpenAI SDK compatibility
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

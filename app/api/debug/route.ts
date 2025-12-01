@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
+// Ensure Node.js runtime for OpenAI SDK compatibility
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 function maskValue(value: string | undefined, showChars: number = 10): string {
   if (!value) return "NOT SET";
   if (value.length <= showChars) return "set (too short to mask)";
@@ -28,7 +32,11 @@ export async function GET() {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY not set");
     }
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 60000,
+      maxRetries: 3,
+    });
     // Use models.list() - it's a simple API call that doesn't cost tokens
     const models = await openai.models.list();
     results.tests.openai = {
