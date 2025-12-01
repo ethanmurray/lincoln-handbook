@@ -26,24 +26,31 @@ export async function GET() {
     },
   };
 
-  // Test OpenAI
+  // Test OpenAI - try both SDK and direct fetch
   const openaiStart = Date.now();
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY not set");
     }
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60000,
-      maxRetries: 3,
+
+    // First try direct fetch to isolate SDK vs network issues
+    const fetchStart = Date.now();
+    const fetchResponse = await fetch("https://api.openai.com/v1/models", {
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
     });
-    // Use models.list() - it's a simple API call that doesn't cost tokens
-    const models = await openai.models.list();
+    const fetchLatency = Date.now() - fetchStart;
+    const fetchData = await fetchResponse.json();
+
     results.tests.openai = {
-      success: true,
-      error: null,
+      success: fetchResponse.ok,
+      error: fetchResponse.ok ? null : fetchData?.error?.message || "Unknown error",
       latency_ms: Date.now() - openaiStart,
-      model_count: models.data?.length || 0,
+      fetch_latency_ms: fetchLatency,
+      fetch_status: fetchResponse.status,
+      model_count: fetchData?.data?.length || 0,
+      method: "direct_fetch",
     };
   } catch (error: any) {
     results.tests.openai = {
@@ -53,6 +60,8 @@ export async function GET() {
       error_type: error?.constructor?.name,
       error_status: error?.status,
       error_code: error?.code,
+      error_cause: error?.cause?.message || null,
+      method: "direct_fetch",
     };
   }
 
